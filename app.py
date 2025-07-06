@@ -1,31 +1,29 @@
-# app.py
-
 import streamlit as st
+import streamlit_authenticator as stauth
 
-# --- Page setup
-st.set_page_config(page_title="Smart Balance Viewer", page_icon="💰")
+# --- User credentials (dummy login)
+credentials = {
+    "usernames": {
+        "amogh@email.com": {
+            "name": "Amogh",
+            "password": stauth.Hasher(["123456"]).generate()[0]
+        }
+    }
+}
 
-# --- Initialize session state
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+# --- Authenticator config
+authenticator = stauth.Authenticate(
+    credentials,
+    "smart_balance_app", "abcdef", cookie_expiry_days=1
+)
 
-# --- Function to display login screen
-def show_login():
-    st.title("🔐 Login to Smart Balance App")
-    st.markdown("Please enter your credentials to continue")
+# --- Login UI
+name, authentication_status, username = authenticator.login("Login", "main")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+if authentication_status:
+    authenticator.logout("Logout", "sidebar")
+    st.sidebar.success(f"Logged in as {name}")
 
-    if st.button("Login"):
-        if email == "amogh@email.com" and password == "123456":
-            st.session_state.logged_in = True
-            st.success("Login successful ✅")
-        else:
-            st.error("Incorrect email or password ❌")
-
-# --- Function to show balance page
-def show_balance_page():
     st.title("💳 Smart Balance Viewer")
     st.markdown("Check balances across your PAN-linked bank accounts")
 
@@ -38,7 +36,6 @@ def show_balance_page():
         else:
             st.success("✅ Mock bank accounts found for this PAN!")
 
-            # --- Simulated balances
             mock_balances = {
                 "SBI": 120000,
                 "HDFC": 73500,
@@ -52,8 +49,7 @@ def show_balance_page():
             total = sum(mock_balances.values())
             st.markdown(f"---\n### 🧾 **Total Balance: ₹{total:,.2f}**")
 
-# --- App logic
-if st.session_state.logged_in:
-    show_balance_page()
-else:
-    show_login()
+elif authentication_status is False:
+    st.error("Incorrect email or password ❌")
+elif authentication_status is None:
+    st.warning("Please enter your credentials to log in.")
