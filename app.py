@@ -1,13 +1,13 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# --- App Config
+# --- App config
 st.set_page_config(page_title="Smart Finance App", page_icon="💰")
 
 st.title("💳 Smart Balance Viewer")
 st.markdown("Please sign in with your Google account to continue")
 
-# --- Firebase Config (from your Firebase setup)
+# --- Firebase config (your credentials)
 firebase_config = {
   "apiKey": "AIzaSyAYFzJ404quHTLGfr1zNU-Xt5bH8sFspww",
   "authDomain": "smart-finance-app-b64dc.firebaseapp.com",
@@ -17,7 +17,7 @@ firebase_config = {
   "appId": "1:420160178429:web:5160818c5a33f9e05fd694"
 }
 
-# --- HTML + JS for Firebase Google Login
+# --- Login HTML/JS block using redirect (not popup)
 login_component = f"""
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -25,52 +25,57 @@ login_component = f"""
 <div id="login-box">
   <button onclick="signInWithGoogle()">Sign in with Google</button>
 </div>
+
 <script>
   const firebaseConfig = {firebase_config};
   firebase.initializeApp(firebaseConfig);
 
   function signInWithGoogle() {{
     const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider).then(result => {{
+    firebase.auth().signInWithRedirect(provider);
+  }}
+
+  firebase.auth().getRedirectResult().then((result) => {{
+    if (result.user) {{
       const user = result.user;
       const loginData = {{
         email: user.email,
         name: user.displayName
       }};
       window.parent.postMessage({{ type: 'LOGIN_SUCCESS', loginData }}, '*');
-    }}).catch(console.error);
-  }}
+    }}
+  }}).catch(console.error);
 </script>
 """
 
-# --- Placeholder for user login status
-user_email = st.session_state.get("user_email", None)
+# --- Capture login message (from JS) into Streamlit session state
+user_data = st.session_state.get("user_data")
 
-# --- Streamlit JS bridge to listen to login event
-components.html(
-    login_component,
-    height=200
-)
+# JS handler to catch login info from frontend
+components.html(login_component, height=300)
 
-# --- Capture login from browser → Streamlit session state
 st.markdown("""
 <script>
 window.addEventListener("message", (event) => {
   if (event.data.type === "LOGIN_SUCCESS") {
-    const loginData = event.data.loginData;
-    const streamlitEvent = new CustomEvent("streamlit:setComponentValue", {{
-      detail: {{ key: "user_email", value: loginData.email }}
-    }});
+    const user = event.data.loginData;
+    const payload = JSON.stringify(user);
+    const streamlitEvent = new CustomEvent("streamlit:store", {
+      detail: {{ key: "user_data", value: payload }}
+    });
     window.dispatchEvent(streamlitEvent);
   }
 });
 </script>
 """, unsafe_allow_html=True)
 
-# --- If user is logged in, show the dashboard
-if user_email:
-    st.success(f"Welcome back, {user_email} 🎉")
-    st.subheader("Your Mock Bank Balances:")
+# --- Unlock dashboard if logged in
+if user_data:
+    import json
+    user_info = json.loads(user_data)
+    st.success(f"Welcome, {user_info['name']} ({user_info['email']}) 👋")
+
+    st.subheader("Your Mock Bank Balances")
 
     mock_balances = {
         "SBI": 120000,
