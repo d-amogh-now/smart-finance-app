@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import streamlit_authenticator as stauth
 
@@ -20,7 +18,7 @@ authenticator = stauth.Authenticate(
 )
 
 # --- Login logic
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login("main")
 
 if authentication_status:
     authenticator.logout("Logout", "sidebar")
