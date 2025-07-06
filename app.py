@@ -1,23 +1,25 @@
+# app.py
+
 import streamlit as st
 import streamlit_authenticator as stauth
 
-# --- User credentials (dummy login)
+# --- Pre-hashed password for "123456"
 credentials = {
     "usernames": {
         "amogh@email.com": {
             "name": "Amogh",
-            "password": stauth.Hasher(["123456"]).generate()[0]
+            "password": "$2b$12$e0bVvhr08/S1DjznUHD5wuQ6J3ePBjNa7aAkkoPH8Kw36ExVKcb6i"
         }
     }
 }
 
-# --- Authenticator config
+# --- Authenticator setup
 authenticator = stauth.Authenticate(
     credentials,
     "smart_balance_app", "abcdef", cookie_expiry_days=1
 )
 
-# --- Login UI
+# --- Login logic
 name, authentication_status, username = authenticator.login("Login", "main")
 
 if authentication_status:
